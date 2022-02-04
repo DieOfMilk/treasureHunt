@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.stats import multivariate_normal
+
 
 
 class treasureHuntSimulator:
@@ -8,41 +10,35 @@ class treasureHuntSimulator:
         self.verbose=verbose
     def reset(self):
         self.done=False
-        self.prob=np.random.rand(self.row*self.col)
-        self.prob=self.prob/sum(self.prob)
+        self.treasureId, a, b =self.makeTreasure()
+        self.prob = self.makeProbability(a,b)
         self.digTime=np.random.randint(low=2,high=5,size=self.row*self.col)
         self.agentPosition=np.zeros(self.row*self.col)
         self.agentPosition[0]=1
         self.agentPositionId=0
-        treasureProb=np.random.rand(1)
-        treasureSum=0
-        self.treasureId=0
         puzzleNo = int((self.row*self.col)**(1/2))
         self.makeGroup(puzzleNo)
-        for i in self.prob:
-            treasureSum+=i
-            if treasureProb<treasureSum:
-                break
-            else:
-                self.treasureId+=1
+
         self.timeStemp=0
     
     def makeGroup(self,puzzleNo):
         groupID=0
-        groupInfo=np.zeros((puzzleNo,4)) ## show each edge
-        groupInfo[0] = [0,0,self.row-1,self.col-1]
+        groupInfo=np.zeros((puzzleNo,4),dtype=int) ## show each edge
+        groupInfo[0] = [0,0,self.row,self.col]
         groupMap=np.zeros((self.row,self.col))
-        for i in range(puzzleNo):
-            x = np.random.randint(groupID+1) ## choose puzzle Id to divie
-            y = np.random.randint(2) ## choose row or colunm to divide
-            if y==0:
-                upLine = groupInfo[x][2]
-                downLine = groupInfo[x]][0]
-            else:
-                upLine = groupInfo[x][3]
-                downLine = groupInfo[x]][1]
-            cutRange=upLine-downLine
-            cutLine = np.random.randint(cutRange+1)
+        for i in range(puzzleNo-1):
+            cutRange=0
+            while cutRange <= 1:
+                x = np.random.randint(groupID+1) ## choose puzzle Id to divie
+                y = np.random.randint(2) ## choose row or colunm to divide
+                if y==0:
+                    upLine = groupInfo[x][2]
+                    downLine = groupInfo[x][0]
+                else:
+                    upLine = groupInfo[x][3]
+                    downLine = groupInfo[x][1]
+                cutRange=upLine-downLine
+            cutLine = np.random.randint(1,cutRange)
             if y==0:
                 groupInfo[x][2] = cutLine+downLine
                 groupInfo[groupID+1][0] = cutLine+downLine
@@ -58,15 +54,50 @@ class treasureHuntSimulator:
             groupID+=1
         tempID=0
         for i in groupInfo:
-            for row in range(i[0],i[2]+1):
-                for col in range(i[1],i[3]+1):
+            for row in range(i[0],i[2]):
+                for col in range(i[1],i[3]):
                     groupMap[row][col]=tempID
             tempID+=1
         self.groupMap = groupMap
         self.groupInfo = groupInfo
 
             
+    def makeTreasure(self):
+        a = np.random.randint(0,self.row)
+        b = np.random.randint(0,self.col)
+        distribution = multivariate_normal(mean=[a,b],cov=[[1,0],[0,1]])
+        x,y=np.mgrid[0:self.row:1, 0:self.col:1]
+        pos = np.dstack((x,y))
+        probability = distribution.pdf(pos)
+        totalSum=np.sum(probability)
+        for i in range(len(probability)):
+            for j in range(len(probability[i])):
+                probability[i][j] = probability[i][j]/totalSum
+        treasureId=0
+        treasureProb=np.random.rand(1)
+        treasureSum=0
+        for i in probability:
+            for j in i:
+                treasureSum+=j
+                if treasureProb<treasureSum:
+                    break
+                else:
+                    treasureId+=1
+        return treasureId,a,b
 
+    def makeProbability(self,a,b):
+        an = np.random.randint(-2,3)
+        bn = np.random.randint(-2,3)
+        distribution = multivariate_normal(mean=[a+an,b+bn],cov=[[1,0],[0,1]])
+        x,y=np.mgrid[0:self.row:1, 0:self.col:1]
+        pos = np.dstack((x,y))
+        probability = distribution.pdf(pos)
+        totalSum=np.sum(probability)
+        for i in range(len(probability)):
+            for j in range(len(probability[i])):
+                probability[i][j] = probability[i][j]/totalSum
+        finalProb = np.reshape(probability,(self.row*self.col))
+        return finalProb
         
 
     def moveAgent(self,action):
@@ -132,4 +163,6 @@ class treasureHuntSimulator:
                     print('***',[self.prob[(i-1)*self.col+j],self.digTime[(i-1)*self.col+j],self.agentPosition[(i-1)*self.col+j]],'***', end='')
             print("")
         print("Timestemp : ", self.timeStemp)
+        print("Area information : ")
+        print(self.groupMap)
     

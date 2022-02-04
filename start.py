@@ -1,5 +1,5 @@
 import numpy as np
-from simulator1 import treasureHuntSimulator
+from simulator2 import treasureHuntSimulator
 
 if __name__=='__main__':
     simulator = treasureHuntSimulator(5,5,verbose=True)
