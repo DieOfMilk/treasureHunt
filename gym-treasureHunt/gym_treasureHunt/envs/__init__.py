@@ -1,0 +1,1 @@
+from gym_treasureHunt.envs.simulator2_simple_version import treasureHuntSimulator

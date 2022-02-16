@@ -159,8 +159,11 @@ class treasureHuntSimulator:
 
 
     def getObservation(self):
-        return [self.prob, self.digTime, self.agentPosition] ## [prob,digTime,agentPosition]
-    
+        # return [self.prob, self.digTime, self.agentPosition] ## [prob,digTime,agentPosition]
+        return [self.prob, self.agentPosition]
+    def getDone(self):
+        return self.done
+
     def getScore(self):
         print(-self.timeStemp)
         return - self.timeStemp
